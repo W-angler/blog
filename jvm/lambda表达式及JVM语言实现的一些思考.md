@@ -8,7 +8,7 @@ Java王国里`动词`的地位终于有了提升。
 
 ****
 
-`注：`
+**注：**
 
 Java王国的名词动词，这个典故来自大神`Steve Yegge`的博客：[Execution in the Kingdom of Nouns ](http://steve-yegge.blogspot.jp/2006/03/execution-in-kingdom-of-nouns.html)，附上一篇中文翻译：[名词王国里的死刑](https://my.oschina.net/justjavac/blog/68536)。
 
@@ -100,7 +100,7 @@ lambda表达式并不是函数式语言的专利，很多非函数式语言也加入了函数式编程的支持。
 例子：
 
     int hhh=233;
-    auto f=[x](int x){return hhh+x;};
+    auto f=[hhh](int x){return hhh+x;};
 
 `Python`：`Python`是个很优雅的语言，但是它的lambda表达式我真的很想吐槽，只是一个阉割版的：只能写一行……虽然在知乎上可以看到很多一行Python实现的各种神奇代码（链接：[一行 Python 能实现什么丧心病狂的功能？](https://www.zhihu.com/question/37046157)），但是平时你会去想这些trick吗？如果需要在lambda表达式中进行比较复杂的操作，就必须先写个复杂函数来进行这些操作。虽然Python有`函数对象`，但是这样设计lambda表达式真的好吗？
 
@@ -153,12 +153,12 @@ Java是一个完全`面向对象`的语言（抛开它的`原始类型`不谈），而`JVM平台`的`字节码规
 
     def check(String s) {
         if (s.equals("")) {
-		    throw new IllegalArgumentException()
-	    }
+            throw new IllegalArgumentException()
+        }
     }
     def hhh=["lambda","","groovy"]
     hhh.each{
-	    check it
+        check it
     }
 
 以debug模式运行的`栈轨`：
