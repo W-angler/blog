@@ -31,12 +31,12 @@
  + 调用现场符号（Call site specifier）解析
 * `访问控制(Access Control)`　根据访问控制符（`public`、`protected`、`private`以及默认的包访问权限），限制方法调用和子类的方法重写等的访问权限。
 * `覆盖(Overriding)`　子类覆写父类方法（根据JVM实现，在`虚函数表`中指向子类的方法入口）。
-* `初始化(Initialization)`　执行类构造器的`<clinit>()`方法，进行类变量和其他资源的初始化。Java虚拟机规范规定了有`6`种情况必须立即对类进行初始化（加载，验证，准备必须在此之前完成）:
+* `初始化(Initialization)`　执行类构造器的`<clinit>()`方法，进行类变量和其他资源的初始化。Java虚拟机规范规定了有`6`种情况必须立即对类进行初始化（加载、验证、准备必须在此之前完成）:
  + 调用`new`、`getstatic`、`putstatic`、`invokestatic`指令时（使用new关键字创建对象、读取类的静态字段、设置类的静态字段、调用类的静态方法）；
  + 第一次调用`java.lang.invoke.MethodHandle`实例时；
  + 通过反射机制对类进行调用时；
  + 初始化一个类，其父类未初始化时。
- + If C is an interface that declares a non-abstract, non-static method, the initialization of a class that implements C directly or indirectly. 初始化实现了包含`非抽象`、`非静态`方法的接口的类时；
+ + 初始化实现了包含`非抽象`、`非静态`方法的接口的类时；
  + 指定的执行主类（含main方法的那个类）在虚拟机启动时。
 * `使用(Using)`　在JVM中使用加载好的类。
 * `卸载(Unloading)`　当JVM中不存在某个类的Class对象的引用时，则这个类将会被卸载。
@@ -44,40 +44,96 @@
 
 #### 类加载器（ClassLoader）
 
-当一个 JVM 启动的时候，Java 缺省开始使用如下三种类型类装入器：
+　　类加载器是一个用来加载类文件的Java类或者JVM程序，在运行时动态加载所需的类。类加载器可以加载文件系统、网络或其他来源的类文件，就是说，不管你的类在哪，只要类加载器能够得到它的字节流（无论是文件读取、网络下载），就能被加载到JVM中。
 
+　　在JVM中，有三类默认的类加载器：
+* `Bootstrap类加载器`　它负责加载虚拟机的核心类库，如java.lang.*等。它是所有类加载器的父加载器。Bootstrap类加载器没有任何父类加载器，它依赖于底层操作系统，属于虚拟机的实现的一部分，它并没有继承java.lang.ClassLoader类。
 
-启动（Bootstrap）类加载器：引导类装入器是用本地代码实现的类装入器，它负责将 <Java_Runtime_Home>/lib 下面的类库加载到内存中。由于引导类加载器涉及到虚拟机本地实现细节，开发者无法直接获取到启动类加载器的引用，所以不允许直接通过引用进行操作。
+* `Extension类加载器`将类加载请求先委托给它的父加载器，也就是Bootstrap类加载器，如果没有成功加载的话，再从`jre/lib/ext`目录下或者`java.ext.dirs`系统属性定义的目录下加载类。在oracle的JVM实现里，是`sun.misc.Launcher$AppClassLoader`类，继承自java.lang.ClassLoader类，
 
+* `Application类加载器`　也叫System类加载器。它负责从`CLASSPATH`环境变量中加载某些应用相关的类，CLASSPATH环境变量通常由-classpath或-cp命令行选项来定义，或者是JAR中的Manifest的classpath属性。Application类加载器是Extension类加载器的子加载器。在oracle的JVM实现里，是`sun.misc.Launcher$ExtClassLoader`类，继承自java.lang.ClassLoader类。
 
-标准扩展（Extension）类加载器：扩展类加载器是由 Sun 的 ExtClassLoader（sun.misc.Launcher$ExtClassLoader） 实现的。它负责将
+　　除了以上的三种类加载器，还有一种比较特殊的类型，线程上下文类加载器，这里就不赘述，可以查看这篇博客：[线程上下文类加载器](http://blog.csdn.net/zhoudaxia/article/details/35897057) 。
 
-< Java_Runtime_Home >/lib/ext 或者由系统变量 java.ext.dir 指定位置中的类库加载到内存中。开发者可以直接使用标准扩展类加载器。
+　　然而，类加载这个部分有趣的地方，并不是这些自带的类加载器，而是那些可以自己定制的地方。因为类加载器并不管字节流的来源，只要能通过验证就可以了。所以，你可以通过自定义的类加载器，从互联网的任何一个地方加载一个类到你本地的JVM中；你可以加载经过加密的字节码，在加载的过程中解密，如果是经过非对称加密（`RSA`、`ECC`等）的话，便可以让不信任的人无法运行加密过的Java程序；你可以在运行时，根据环境、需求的不同，加载不同的类到JVM中……
 
+　　类加载还有一个委托机制，就是，当加载一个类时，类加载器的调用顺序是Bootstrap类加载器→Extension类加载器→Application类加载器→自己定义的类加载器。当前面的类加载器加载不了，便会委托给下一级，如果都加载不了，便会抛出`ClassNotFoundException`。
 
-系统（System）类加载器：系统类加载器是由 Sun 的 AppClassLoader（sun.misc.Launcher$AppClassLoader）实现的。它负责将系统类路径（CLASSPATH）中指定的类库加载到内存中。开发者可以直接使用系统类加载器。
+　　接下来我们通过一个简单的例子来理解：
 
+`MyLoader.java`
 
-除了以上列举的三种类加载器，还有一种比较特殊的类型就是线程上下文类加载器
+    import java.io.FileInputStream;
+	import java.nio.ByteBuffer;
+	import java.nio.channels.FileChannel;
+	
+	/**
+	 * 自定义类加载器，为了简单，加载一个特定的类。<br>
+	 * 自定义必须覆盖<code>findClass</code>方法。
+	 * @author w-angler
+	 *
+	 */
+	public class MyLoader extends ClassLoader {
+		/**
+		 * 获取字节流，假设在F盘下有一个hhh.class
+		 * @param name
+		 * @return
+		 */
+		private byte[] load(){
+			try(FileInputStream is=new FileInputStream("F:\\hhh.class")){
+				FileChannel channel=is.getChannel();
+				ByteBuffer buffer=ByteBuffer.allocate((int)channel.size());
+				channel.read(buffer);
+				return buffer.array();
+			}catch(Exception e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+		@Override
+		public Class<?> findClass(String name){
+			byte[] b=load();
+			return defineClass("hhh",b, 0, b.length);
+		}
+	}
 
-a. Bootstrap ClassLoader/启动类加载器
+`TestClassLoader.java`
 
-主要负责jdk_home/lib目录下的核心 api 或 -Xbootclasspath 选项指定的jar包装入工作.
+    
+	import javax.script.ScriptEngine;
+	import javax.script.ScriptEngineManager;
+	
+	public class TestClassLoader {
+		public static void main(String[] args) throws Exception {
+			//Nashorn是java 8添加的JavaScript引擎，它在ext目录下
+			ScriptEngineManager scriptEngineManager = new ScriptEngineManager(); 
+			ScriptEngine nashorn = scriptEngineManager.getEngineByName("nashorn");
+			MyLoader loader=new MyLoader();
+			Class<?> cls=loader.loadClass("2333，这个参数其实没用了");
+			System.out.println(String.class.getClassLoader());
+			System.out.println(nashorn.getClass().getClassLoader());
+			System.out.println(TestClassLoader.class.getClassLoader());
+			System.out.println(cls.getClassLoader());
+		}
+	}
 
-b. Extension ClassLoader/扩展类加载器
+`结果：`
 
-主要负责jdk_home/lib/ext目录下的jar包或 -Djava.ext.dirs 指定目录下的jar包装入工作
+    null
+	sun.misc.Launcher$ExtClassLoader@42a57993
+	sun.misc.Launcher$AppClassLoader@73d16e93
+	MyLoader@64bf3bbf
 
-c. System ClassLoader/系统类加载器
-
-主要负责java -classpath/-Djava.class.path所指的目录下的类与jar包装入工作.
-
-d. User Custom ClassLoader/用户自定义类加载器(java.lang.ClassLoader的子类)
-
-在程序运行期间, 通过java.lang.ClassLoader的子类动态加载class文件, 体现java动态实时类装入特性.
-
-#### 类文件的结构
+　　从结果可以看出，基本库中的类通过`Bootstrap类加载器`加载，所以输出为null；在ext目录下的类，通过`Extension类加载器`加载；在classpath中的类，通过`Application类加载器`；当这些类都无法加载时，采用自定义的类加载器（如果有）加载。
 
 #### 类加载时的初始化
 
+　　类加载时的初始化顺序
+
 #### 使用技巧
+
+
+
+
+
+
