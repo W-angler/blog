@@ -87,6 +87,18 @@
             (funcall f (lambda (&rest args)
                   (apply (funcall x x) args))))))
 
+`Groovy`:
+
+	def Y = {
+		h -> ({
+			f -> f(f)
+		})({
+			f -> h{
+				x -> f(f)(x)
+			}
+		})
+	}
+
 　　好吧，尝试使用java 的lambda表达式来写，发现写不了。
 
 ****
@@ -96,6 +108,7 @@
 `Java`:
 
     public class YCombinator {
+		@FunctionalInterface
 		interface Combinator<E> {
 			public E call(Object... args);
 		}
@@ -123,6 +136,12 @@
 			}));
 			System.out.println(y.call(233));
 		}
+	}
+	
+	interface Combinator<F> extends Function<Combinator<F>, F> {}
+	public static <A,B> Function<A,B> Y(Function<Function<A,B>, Function<A,B>> f){
+		Combinator<Function<A,B>> r = w -> f.apply(x -> w.apply(w).apply(x));
+		return r.apply(r);
 	}
 
 　　不得不说，Java的lambda实在太坑，居然还需要类型转换……
