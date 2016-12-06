@@ -117,7 +117,7 @@
 
     gcc run-finalizer.c -o run-finalizer
 
-　　2、查看`.fini_array`（译者注：相关资料，[链接程序和库指南](http://docs.oracle.com/cd/E19253-01/819-7050/chapter3-1/)，[When will the .fini_array section being used?](http://stackoverflow.com/questions/26292964/when-will-the-fini-array-section-being-used)）的地址：
+　　2、查看`.fini_array`（译者注：相关资料，[链接程序和库指南](http://docs.oracle.com/cd/E19253-01/819-7050/chapter3-1/)，[初始化和终止节](http://docs.oracle.com/cd/E19253-01/819-7050/6n918j8mn/index.html#chapter2-48195)，[When will the .fini_array section being used?](http://stackoverflow.com/questions/26292964/when-will-the-fini-array-section-being-used)）的地址：
 
     objdump -h -j .fini_array run-finalizer
 
@@ -129,7 +129,7 @@
     19 .fini_array   00000008  00000000006007d8  00000000006007d8  000007d8  2**3
                      CONTENTS, ALLOC, LOAD, DATA
 
-　　你最好使用最新版本的GCC来编译，老版本使用不同的机制来存储`finalizer`（译者注：这里实在不知道怎么翻译了）。
+　　你最好使用最新版本的GCC来编译，老版本使用不同的机制来存储`终止例程`（资料：[初始化和终止例程](http://docs.oracle.com/cd/E19253-01/819-7050/6n918j8n2/index.html)）。
 
 　　3、将`ADDR`改为`VMA`的值；
 
@@ -143,9 +143,7 @@
 
 　　根据[Chapter 11 of Linux Standard Base Core Specification 3.1](http://refspecs.linuxbase.org/LSB_3.1.1/LSB-Core-generic/LSB-Core-generic/specialsections.html)：
 
-> .fini_array 这个部分包含了一个函数指针数组，在含有这个部分的可执行文件或者共享对象中作为一个单独的终止数组（termination array）。
-
-> 实在翻译不出来，不敢误人子弟，下面是原文。
+> .fini_array 这个节包含了一个函数指针数组，在含有这个部分的可执行文件或者共享对象中作为一个单独的终止函数数组（termination array）。
 
 > This section holds an array of function pointers that contributes to a single termination array for the executable or shared object containing the section.
 
@@ -259,7 +257,7 @@
 
 　　如果我们将`hello`函数移除，插入上面的`shellcode`的话，这段`shellcode`就会被执行。
 
-　　这个`shellcode`其实就是一个字符串，所以我们可以将它插入到`%*c%hn%*c%hn`的后面。这个字符串是未命名的，所以我们需要在编译后找到它的地址。为了获取这个地址，我们需要编译这个代码，然后反编译为汇编：
+　　这个`shellcode`其实就是一个字符串（或者说，可以看做），所以我们可以将它插入到`%*c%hn%*c%hn`的后面。这个字符串是未命名的，所以我们需要在编译后找到它的地址。为了获取这个地址，我们需要编译这个代码，然后反编译为汇编：
 
 `objdump -d webserver`
 
@@ -341,7 +339,7 @@
 
 > `Jeff Dean`有一次用一句printf实现了一个web服务器。其他工程师添加了数千行注释但依然无法完全解释清楚其工作原理。而这个程序就是今天Google首页的前端。
 
-　　作为练习，读者可以自己修改一下这个web服务器，让他可以支持`Google搜索`前端的加载。
+　　作为练习，读者可以自己修改一下这个web服务器，让它可以支持`Google搜索`前端的加载。
 
 　　这篇博客的代码可以在这里找到：[https://github.com/yohanes/printf-webserver](https://github.com/yohanes/printf-webserver)
 
@@ -353,11 +351,27 @@
 
 ****
 
-　　最初看到这个笑话时，没有想到真的可以实现，原文作者真的是一个很geek的大神，在翻译的过程中，我学到了很多东西，例如内存布局、函数调用栈、格式化字符串攻击等等。翻译的比较随便，很多术语没接触过，也翻译不出来，如果看得不是舒爽，可以直接看原文。
+　　最初看到这个笑话时，没有想到真的可以实现，原文作者真的是一个很geek的大神，在翻译的过程中，我学到了很多东西，例如动态链接、内存布局、函数调用栈、格式化字符串攻击等等。翻译的比较随便，很多术语没接触过，也翻译不出来，如果看得不是舒爽，可以直接看原文。
 
 　　我的运行结果：
 
 ![](http://www.w-angler.com/static/images/2016-12-05_8180005E3725B1E0A9205E0FFCCD8F40.png)
 
 ![](http://www.w-angler.com/static/images/2016-12-05_F57336A2CABC27D770FD76FD96A63F06.png)
+
+****
+
+#### 补充
+
+**** 
+
+　　很多人说没有看明白，我就根据自己的理解解释一下吧。
+
+　　首先，这里涉及的技术有`动态链接库`的加载、初始化、卸载、终止等（上面有相关的资料），`格式化字符串攻击`，`shellcode`的原理及编写……
+
+　　关键的一点是，覆盖`.fini_array`这个节，这个节的代码将会在动态链接库（或者可执行程序）卸载时被执行。这里再次给出相关的资料链接，[初始化和终止节](http://docs.oracle.com/cd/E19253-01/819-7050/6n918j8mn/index.html#chapter2-48195)。从中我们也可以知道，为什么是要覆盖终止节而不是初始化节，因为我们需要先使用printf()修改.fini_array节的内容，然后在程序结束时，这个节的内容就会被执行，覆盖初始化节的话，没有什么用，因为程序已经执行过修改前的初始化代码了。这个`初始化`和`终止节`，可以理解为C++中的`构造函数`和`析构函数`，只不过，涉及的不是类，而是链接库或者可执行程序。
+
+　　其次，格式化字符串攻击。这个看一下上面的资料就能明白了，主要原理就是通过格式化字符串修改某个内存地址的值。这里就是通过这个来修改.fini_array。
+
+　　最后，`shellcode`部分，这个就很geek了，具体原理以及shellcode的编写上面有相关的资料。原文作者已经编写了一个简单的web服务器的shellcode，.fini_array的值被修改为它的地址，所以它会在程序结束时被执行。理论上，只要你的shellcode有这么复杂，你几乎可以使用一句printf实现任何功能。
 
