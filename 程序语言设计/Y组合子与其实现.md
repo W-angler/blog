@@ -2,7 +2,7 @@
 
 ### lambda演算
 
-　　在我的另一篇博客[lambda表达式及JVM语言实现的一些思考](http://www.w-angler.com/blog/3/2)中，提到过lamdba演算和lambda表达式，以及它们之间的关系。这里就不再赘述了。
+　　在我的另一篇博客[lambda表达式及JVM语言实现的一些思考](https://www.w-angler.com/blog/3/2)中，提到过lamdba演算和lambda表达式，以及它们之间的关系。这里就不再赘述了。
 
 　　参考资料：
 
@@ -64,7 +64,7 @@
 `Python`:
 
     def Y(f):
-	    return (lambda h: h(h))(lambda x: f(lambda *args: x(x)(*args)))
+        return (lambda h: h(h))(lambda x: f(lambda *args: x(x)(*args)))
 
 `JavaScript`:
 
@@ -108,40 +108,40 @@
 `Java`:
 
     public class YCombinator {
-		@FunctionalInterface
-		interface Combinator<E> {
-			public E call(Object... args);
-		}
-		@SuppressWarnings({ "unchecked", "rawtypes" })
-		public static Combinator<Combinator> Y(final Combinator<Combinator> f) {
-			return (Combinator<Combinator>) ((Combinator)(args1->{
-				final Combinator<Combinator> h = (Combinator<Combinator>)args1[0];
-				return h.call(h);
-			})).call((Combinator)(args2->{
-				final Combinator<Combinator> x=(Combinator<Combinator>)args2[0];
-				return f.call((Combinator)(args3->{
-					return x.call(x).call(args3);
-				}));
-			}));
-		}
-		@SuppressWarnings({ "rawtypes", "unchecked" })
-		public static void main(String[] s) {
-			//A simple test
-			Combinator<Combinator> y = Y((Combinator<Combinator>)(args->{
-				final Combinator<Integer> f = (Combinator<Integer>)args[0];
-				return x->{
-					int n = Integer.parseInt(x[0].toString());
-					return n==1?n:n*f.call(n-1);
-				};
-			}));
-			System.out.println(y.call(233));
-		}
-	}
-	
-	interface Combinator<F> extends Function<Combinator<F>, F> {}
-	public static <A,B> Function<A,B> Y(Function<Function<A,B>, Function<A,B>> f){
-		Combinator<Function<A,B>> r = w -> f.apply(x -> w.apply(w).apply(x));
-		return r.apply(r);
-	}
+    	@FunctionalInterface
+    	interface Combinator<E> {
+    		public E call(Object... args);
+    	}
+    	@SuppressWarnings({ "unchecked", "rawtypes" })
+    	public static Combinator<Combinator> Y(final Combinator<Combinator> f) {
+    		return (Combinator<Combinator>) ((Combinator)(args1->{
+    			final Combinator<Combinator> h = (Combinator<Combinator>)args1[0];
+    			return h.call(h);
+    		})).call((Combinator)(args2->{
+    			final Combinator<Combinator> x=(Combinator<Combinator>)args2[0];
+    			return f.call((Combinator)(args3->{
+    				return x.call(x).call(args3);
+    			}));
+    		}));
+    	}
+    	@SuppressWarnings({ "rawtypes", "unchecked" })
+    	public static void main(String[] s) {
+    		//A simple test
+    		Combinator<Combinator> y = Y((Combinator<Combinator>)(args->{
+    			final Combinator<Integer> f = (Combinator<Integer>)args[0];
+    			return x->{
+    				int n = Integer.parseInt(x[0].toString());
+    				return n==1?n:n*f.call(n-1);
+    			};
+    		}));
+    		System.out.println(y.call(233));
+    	}
+    }
+    
+    interface Combinator<F> extends Function<Combinator<F>, F> {}
+    public static <A,B> Function<A,B> Y(Function<Function<A,B>, Function<A,B>> f){
+    	Combinator<Function<A,B>> r = w -> f.apply(x -> w.apply(w).apply(x));
+    	return r.apply(r);
+    }
 
 　　不得不说，Java的lambda实在太坑，居然还需要类型转换……

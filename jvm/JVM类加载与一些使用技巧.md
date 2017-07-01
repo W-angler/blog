@@ -10,7 +10,7 @@
 
 　　根据`JVM规范`第五章（地址：[Chapter 5. Loading, Linking, and Initializing](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-5.html)），类加载的过程可以表示为下图（原谅我用visio随便画的丑图），图中有一定的顺序，但是有些阶段JVM规范并未规定一定要这样，这里只是直观上的顺序：
 
-![](http://www.w-angler.com/static/images/2016-10-24_1F82C95299365025B6D6A0C7609CA95E.png)
+![](https://www.w-angler.com/static/images/2016-10-24_1F82C95299365025B6D6A0C7609CA95E.png)
 
 　　接下来一一讲解一下每个过程：
 
